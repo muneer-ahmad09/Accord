@@ -1,4 +1,3 @@
-import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import StatCards from "@/components/StatCards";
 import RevenueChart from "@/components/RevenueChart";
@@ -7,35 +6,22 @@ import RecentTransactions from "@/components/RecentTransactions";
 
 export default function Dashboard() {
   return (
-    <div style={{
-      display: "flex",
-      height: "100vh",
-      overflow: "hidden",
-      background: "var(--main-bg)"
-    }}>
-      <Sidebar />
-
-      <main style={{
-        flex: 1,
-        overflow: "auto",
-        display: "flex",
-        flexDirection: "column",
-      }}>
-        <Topbar />
-
-        <div style={{ padding: "0 28px 28px", flex: 1 }}>
-          <StatCards />
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
-            <RevenueChart />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <TrafficSources />
-              <RecentTransactions />
-            </div>
+    <>
+      <Topbar placeholder="Search clients, invoices..." />
+      <div style={{ padding: "28px 32px" }}>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--text-1)" }}>Project Overview</h1>
+          <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 4 }}>Company Dashboard</p>
+        </div>
+        <StatCards />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20 }}>
+          <RevenueChart />
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <TrafficSources />
+            <RecentTransactions />
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }

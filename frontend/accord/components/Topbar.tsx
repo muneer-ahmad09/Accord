@@ -1,73 +1,59 @@
 "use client";
-import { Search, Bell, ChevronDown, User } from "lucide-react";
+import { Search, Bell, User } from "lucide-react";
 
-export default function Topbar() {
+interface TopbarProps {
+  placeholder?: string;
+}
+
+export default function Topbar({ placeholder = "Search..." }: TopbarProps) {
   return (
     <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "20px 28px 0",
-      marginBottom: 24,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "20px 32px",
+      borderBottom: "1px solid var(--border-dim)",
+      background: "var(--bg)",
+      position: "sticky", top: 0, zIndex: 10,
     }}>
-      <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
-          Project Overview
-        </h1>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>Company Dashboard</p>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "var(--bg-card)", border: "1px solid var(--border)",
+        borderRadius: 10, padding: "9px 16px", width: 320,
+      }}>
+        <Search size={14} color="var(--text-3)" />
+        <input placeholder={placeholder} style={{
+          border: "none", outline: "none", background: "transparent",
+          fontSize: 13, color: "var(--text-1)", width: "100%", fontFamily: "inherit"
+        }} />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        {/* Search */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#fff", border: "1px solid var(--border)",
-          borderRadius: 10, padding: "8px 14px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
-        }}>
-          <Search size={15} color="#9aacbf" />
-          <input
-            placeholder="Search..."
-            style={{
-              border: "none", outline: "none",
-              fontSize: 13, color: "var(--text-primary)",
-              background: "transparent", width: 160,
-              fontFamily: "inherit"
-            }}
-          />
-        </div>
-
-        {/* Bell */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button style={{
-          position: "relative", background: "#fff", border: "1px solid var(--border)",
-          borderRadius: 10, width: 38, height: 38, display: "flex",
-          alignItems: "center", justifyContent: "center", cursor: "pointer",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
+          position: "relative", background: "var(--bg-card)",
+          border: "1px solid var(--border)", borderRadius: 10,
+          width: 38, height: 38, display: "flex", alignItems: "center",
+          justifyContent: "center", cursor: "pointer"
         }}>
-          <Bell size={16} color="var(--text-secondary)" />
+          <Bell size={15} color="var(--text-2)" />
           <span style={{
-            position: "absolute", top: 7, right: 7,
-            width: 8, height: 8, borderRadius: "50%",
-            background: "#ff6b6b", border: "2px solid #fff"
+            position: "absolute", top: 8, right: 8, width: 7, height: 7,
+            borderRadius: "50%", background: "var(--accent)",
+            border: "2px solid var(--bg)"
           }} />
         </button>
 
-        {/* User */}
         <button style={{
           display: "flex", alignItems: "center", gap: 8,
-          background: "#fff", border: "1px solid var(--border)",
-          borderRadius: 10, padding: "7px 12px",
-          cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 10, padding: "7px 14px", cursor: "pointer"
         }}>
           <div style={{
             width: 26, height: 26, borderRadius: "50%",
-            background: "linear-gradient(135deg, #4dabf7, #38d9a9)",
+            background: "linear-gradient(135deg, #4f7eff, #38d9a9)",
             display: "flex", alignItems: "center", justifyContent: "center"
           }}>
-            <User size={14} color="#fff" />
+            <User size={13} color="#fff" />
           </div>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>User profile</span>
-          <ChevronDown size={13} color="var(--text-secondary)" />
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)" }}>Profile</span>
         </button>
       </div>
     </div>

@@ -5,28 +5,41 @@
 @tailwind utilities;
 
 :root {
-  --sidebar-bg: #ffffff;
-  --main-bg: #f0f4f8;
-  --card-bg: #ffffff;
-  --accent-teal: #38d9a9;
-  --accent-blue: #4dabf7;
-  --accent-green: #69db7c;
-  --text-primary: #1a2332;
-  --text-secondary: #6b7a99;
-  --border: #e8edf5;
-  --shadow: 0 2px 16px rgba(30, 60, 110, 0.06);
-  --shadow-lg: 0 8px 32px rgba(30, 60, 110, 0.10);
+  --bg:         #0f1117;
+  --bg-card:    #181c26;
+  --bg-card2:   #1e2330;
+  --bg-hover:   #232840;
+  --border:     #2a3045;
+  --border-dim: #1f2535;
+  --sidebar-bg: #0d1020;
+  --accent:     #4f7eff;
+  --accent2:    #38d9a9;
+  --accent-glow:rgba(79,126,255,0.25);
+  --text-1:     #f0f3ff;
+  --text-2:     #8b95b8;
+  --text-3:     #4e587a;
+  --green:      #22c55e;
+  --yellow:     #f59e0b;
+  --red:        #ef4444;
+  --shadow:     0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg:  0 8px 48px rgba(0,0,0,0.6);
+  --radius:     14px;
+  --radius-sm:  8px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background: var(--main-bg);
-  color: var(--text-primary);
+  background: var(--bg);
+  color: var(--text-1);
   min-height: 100vh;
 }
 
-::-webkit-scrollbar { width: 6px; }
+h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d0d9e8; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+input, select, button { font-family: 'DM Sans', sans-serif; }
