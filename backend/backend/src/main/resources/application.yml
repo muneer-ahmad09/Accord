@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: accord0786@gmail.com
+    password: neytxnyjcjtccjpz
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: ${PORT:8080}
+
+stripe:
+  api:
+    key: ${STRIPE_KEY}
+  webhook:
+    secret: ${STRIPE_SIGNING_SECRET}
+
+
