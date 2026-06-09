@@ -1,5 +1,5 @@
 "use client";
-import { Gauge, Users, FileText, FileSignature, Wallet, Bell, Settings, User } from "lucide-react";
+import { Gauge, Users, FileText, FileSignature, Wallet, Bell, Settings, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -17,15 +17,15 @@ const bottomItems = [
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-interface SidebarProps { onClose?: () => void; isMobile?: boolean; }
+interface Props { onClose: () => void; }
 
-export default function Sidebar({ onClose, isMobile }: SidebarProps) {
+export default function MobileSidebar({ onClose }: Props) {
   const pathname = usePathname();
 
   const NavItem = ({ icon: Icon, label, href }: { icon: React.ElementType; label: string; href: string }) => {
     const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
     return (
-      <Link key={label} href={href} style={{ textDecoration: "none" }} onClick={isMobile ? onClose : undefined}>
+      <Link href={href} style={{ textDecoration: "none" }} onClick={onClose}>
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "11px 14px", borderRadius: 10, cursor: "pointer",
@@ -52,13 +52,11 @@ export default function Sidebar({ onClose, isMobile }: SidebarProps) {
     <aside style={{
       width: 240, height: "100%",
       background: "var(--sidebar-bg)",
-      borderRight: "1px solid var(--border-dim)",
       display: "flex", flexDirection: "column",
       padding: "28px 0",
-      transition: "background 0.2s",
     }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", padding: "0 20px 32px" }}>
+      {/* Logo + close button (mobile only) */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 32px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
@@ -73,6 +71,13 @@ export default function Sidebar({ onClose, isMobile }: SidebarProps) {
             <div style={{ fontSize: 10, color: "var(--text-3)", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>Business Hub</div>
           </div>
         </div>
+        <button onClick={onClose} style={{
+          background: "none", border: "none", cursor: "pointer",
+          color: "var(--text-3)", padding: 4, borderRadius: 6,
+          display: "flex", alignItems: "center",
+        }}>
+          <X size={18} />
+        </button>
       </div>
 
       <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px", flex: 1 }}>
