@@ -4,11 +4,13 @@ import com.accord.backend.dto.CreateInvoiceDTO;
 import com.accord.backend.dto.InvoiceResponseDTO;
 import com.accord.backend.enums.InvoiceStatus;
 import com.accord.backend.service.InvoiceService;
+import com.accord.backend.utils.UserDetailsImp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,9 +27,9 @@ public class InvoiceController {
      */
     @GetMapping
     public ResponseEntity<Page<InvoiceResponseDTO>> getAllInvoices(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             Pageable pageable) {
-
+        String userId = userDetails.getUser().getId().toString();
         Page<InvoiceResponseDTO> invoices = invoiceService.getAllInvoices(userId, pageable);
         return ResponseEntity.ok(invoices);
     }
@@ -38,8 +40,8 @@ public class InvoiceController {
     @GetMapping("/{invoiceId}")
     public ResponseEntity<InvoiceResponseDTO> getInvoiceById(
             @PathVariable String invoiceId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         InvoiceResponseDTO invoice = invoiceService.getInvoiceById(invoiceId, userId);
         return ResponseEntity.ok(invoice);
     }
@@ -49,9 +51,9 @@ public class InvoiceController {
      */
     @PostMapping
     public ResponseEntity<InvoiceResponseDTO> createInvoice(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             @RequestBody CreateInvoiceDTO dto) {
-
+        String userId = userDetails.getUser().getId().toString();
         InvoiceResponseDTO createdInvoice = invoiceService.createInvoice(userId, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdInvoice);
     }
@@ -63,9 +65,10 @@ public class InvoiceController {
     @PostMapping("/{invoiceId}/send")
     public ResponseEntity<InvoiceResponseDTO> sendInvoice(
             @PathVariable String invoiceId,
-            @RequestAttribute("userId") String userId) {
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
 
         // CHANGE THIS LINE: It was calling updateInvoiceStatus
+        String userId = userDetails.getUser().getId().toString();
         InvoiceResponseDTO updatedInvoice = invoiceService.sendInvoiceToClient(invoiceId, userId);
 
         return ResponseEntity.ok(updatedInvoice);
@@ -77,8 +80,8 @@ public class InvoiceController {
     @DeleteMapping("/{invoiceId}")
     public ResponseEntity<Void> deleteInvoice(
             @PathVariable String invoiceId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         invoiceService.deleteInvoice(invoiceId, userId);
         return ResponseEntity.noContent().build(); // Returns a clean 204 No Content
     }
@@ -86,8 +89,8 @@ public class InvoiceController {
     @GetMapping("/{invoiceId}/download")
     public ResponseEntity<byte[]> downloadInvoicePdf(
             @PathVariable String invoiceId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         byte[] pdfBytes = invoiceService.downloadInvoicePdf(invoiceId, userId);
 
         // Set up the HTTP headers so the client knows a file is incoming

@@ -3,7 +3,8 @@ package com.accord.backend.dto;
 import lombok.Data;
 
 @Data
-public class AuthResponseDTO {
+public class VerifyEmailDTO {
+
     private String email;
-    private String message;
+    private String otp;
 }

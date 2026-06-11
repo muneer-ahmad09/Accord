@@ -4,10 +4,12 @@ import com.accord.backend.dto.TransactionDTO;
 import com.accord.backend.dto.WalletSummaryDTO;
 import com.accord.backend.dto.WithdrawalRequestDTO;
 import com.accord.backend.service.WalletService;
+import com.accord.backend.utils.UserDetailsImp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,8 +25,8 @@ public class WalletController {
      */
     @GetMapping("/summary")
     public ResponseEntity<WalletSummaryDTO> getSummary(
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         WalletSummaryDTO summary = walletService.getWalletSummary(userId);
         return ResponseEntity.ok(summary);
     }
@@ -35,9 +37,9 @@ public class WalletController {
      */
     @GetMapping("/transactions")
     public ResponseEntity<Page<TransactionDTO>> getTransactions(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             Pageable pageable) {
-
+        String userId = userDetails.getUser().getId().toString();
         Page<TransactionDTO> transactions = walletService.getTransactionHistory(userId, pageable);
         return ResponseEntity.ok(transactions);
     }
@@ -47,9 +49,9 @@ public class WalletController {
      */
     @PostMapping("/withdraw")
     public ResponseEntity<String> withdraw(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             @RequestBody WithdrawalRequestDTO dto) {
-
+        String userId = userDetails.getUser().getId().toString();
         // This invokes the processPayout method required to debit the ledger
         walletService.processPayout(userId, dto.getAmount());
         return ResponseEntity.ok("Withdrawal initiated successfully.");

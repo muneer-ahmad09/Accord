@@ -4,11 +4,13 @@ import com.accord.backend.dto.ContractResponseDTO;
 import com.accord.backend.dto.CreateContractDTO;
 import com.accord.backend.enums.ContractStatus;
 import com.accord.backend.service.ContractService;
+import com.accord.backend.utils.UserDetailsImp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,9 +25,9 @@ public class ContractsController {
      */
     @GetMapping
     public ResponseEntity<Page<ContractResponseDTO>> getAllContracts(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             Pageable pageable) {
-
+        String userId = userDetails.getUser().getId().toString();
         Page<ContractResponseDTO> contracts = contractService.getAllContracts(userId, pageable);
         return ResponseEntity.ok(contracts);
     }
@@ -36,8 +38,8 @@ public class ContractsController {
     @GetMapping("/{contractId}")
     public ResponseEntity<ContractResponseDTO> getContractById(
             @PathVariable String contractId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         ContractResponseDTO contract = contractService.getContractById(contractId, userId);
         return ResponseEntity.ok(contract);
     }
@@ -47,9 +49,9 @@ public class ContractsController {
      */
     @PostMapping("/generate")
     public ResponseEntity<ContractResponseDTO> generateContract(
-            @RequestAttribute("userId") String userId,
+            @AuthenticationPrincipal UserDetailsImp userDetails,
             @RequestBody CreateContractDTO dto) {
-
+        String userId = userDetails.getUser().getId().toString();
         ContractResponseDTO createdContract = contractService.createContract(userId, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
     }
@@ -60,8 +62,8 @@ public class ContractsController {
     @PostMapping("/{contractId}/send")
     public ResponseEntity<ContractResponseDTO> sendContract(
             @PathVariable String contractId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         ContractResponseDTO updatedContract = contractService.updateContractStatus(contractId, userId, ContractStatus.SENT);
         return ResponseEntity.ok(updatedContract);
     }
@@ -72,8 +74,8 @@ public class ContractsController {
     @PostMapping("/{contractId}/sign")
     public ResponseEntity<ContractResponseDTO> signContract(
             @PathVariable String contractId,
-            @RequestAttribute("userId") String userId) {
-
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+        String userId = userDetails.getUser().getId().toString();
         ContractResponseDTO updatedContract = contractService.updateContractStatus(contractId, userId, ContractStatus.SIGNED);
         return ResponseEntity.ok(updatedContract);
     }

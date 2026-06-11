@@ -5,6 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -64,5 +65,20 @@ public class EmailService {
                 + "<br/><hr style='border: none; border-top: 1px solid #eee;'/>"
                 + "<p style='font-size: 12px; color: #888;'>Powered by Accord - The professional billing platform.</p>"
                 + "</div>";
+    }
+
+    public void sendOtpEmail(String to, String otp) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setTo(to);
+        message.setSubject("Verify your Accord account");
+        message.setText(
+                "Your verification code is:\n\n"
+                        + otp
+                        + "\n\nThis code expires in 10 minutes."
+        );
+
+        mailSender.send(message);
     }
 }

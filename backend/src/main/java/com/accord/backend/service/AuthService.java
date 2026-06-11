@@ -5,9 +5,19 @@ import com.accord.backend.entity.User;
 import com.accord.backend.exceptions.ResourceNotFoundException;
 import com.accord.backend.repository.UserRepo;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -16,9 +26,16 @@ public class AuthService {
 
     private final UserRepo userRepo;
 
+    private final PasswordEncoder passwordEncoder;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtService jwtService;
+
+    private final EmailService emailService;
+
     @Transactional
     public AuthResponseDTO registerUser(RegisterDTO dto) {
-        // Enforce unique email check at application level
         if (userRepo.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("An account with this email already exists.");
         }
@@ -26,39 +43,66 @@ public class AuthService {
         User user = new User();
         user.setEmail(dto.getEmail());
         user.setAgencyName(dto.getAgencyName());
-
-        // TODO: Replace with: passwordEncoder.encode(dto.getPassword())
-        user.setPasswordHashed(dto.getPassword());
+        user.setPasswordHashed(passwordEncoder.encode(dto.getPassword()));
+        String otp = String.format("%06d",
+                new Random().nextInt(999999));
+        user.setEmailOtpHash(passwordEncoder.encode(otp));
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
 
         User savedUser = userRepo.save(user);
-
-        // TODO: Generate actual JWT token using your JwtTokenProvider utility class
-        String mockJwtToken = "mock-jwt-token-for-" + savedUser.getId();
+        emailService.sendOtpEmail(savedUser.getEmail(), otp);
 
         AuthResponseDTO response = new AuthResponseDTO();
-        response.setToken(mockJwtToken);
         response.setEmail(savedUser.getEmail());
-        response.setAgencyName(savedUser.getAgencyName());
+        response.setMessage("Register successful please verify your email.");
         return response;
     }
 
-    public AuthResponseDTO authenticateUser(LoginDTO dto) {
-        User user = userRepo.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password."));
 
-        // TODO: Replace with validation check: passwordEncoder.matches(dto.getPassword(), user.getPasswordHashed())
-        if (!dto.getPassword().equals(user.getPasswordHashed())) {
-            throw new IllegalArgumentException("Invalid email or password.");
+    public String authenticateUser(LoginDTO dto) {
+
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                dto.getEmail(),
+                                dto.getPassword()
+                        ));
+
+        UserDetails user =
+                (UserDetails) authentication.getPrincipal();
+
+        return jwtService.generateToken(user);
+    }
+
+    @Transactional
+    public String verifyEmail(VerifyEmailDTO dto) {
+
+        User user = userRepo.findByEmail(dto.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        if (user.isEmailVerified()) {
+            throw new RuntimeException("Email already verified");
         }
 
-        // TODO: Generate actual JWT token
-        String mockJwtToken = "mock-jwt-token-for-" + user.getId();
+        if (user.getEmailOtpHash() == null ||
+                !passwordEncoder.matches(dto.getOtp(), user.getEmailOtpHash())) {
 
-        AuthResponseDTO response = new AuthResponseDTO();
-        response.setToken(mockJwtToken);
-        response.setEmail(user.getEmail());
-        response.setAgencyName(user.getAgencyName());
-        return response;
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        user.setEmailVerified(true);
+
+        user.setEmailOtpHash(null);
+        user.setOtpExpiry(null);
+
+        userRepo.save(user);
+
+        return "Email verified successfully";
     }
 
     @Transactional
