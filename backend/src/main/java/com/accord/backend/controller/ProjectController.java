@@ -1,6 +1,7 @@
 package com.accord.backend.controller;
 
 import com.accord.backend.dto.CreateProjectDTO;
+import com.accord.backend.dto.ProjectCountResponseDto;
 import com.accord.backend.dto.ProjectResponseDTO;
 import com.accord.backend.enums.ProjectStatus;
 import com.accord.backend.service.ProjectService;
@@ -12,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -26,6 +29,12 @@ public class ProjectController {
             Pageable pageable) {
         String userId = userDetails.getUser().getId().toString();
         return ResponseEntity.ok(projectService.getAllProjects(userId, pageable));
+    }
+
+    @GetMapping("/count")
+    public ResponseEntity<ProjectCountResponseDto> countProjects(@AuthenticationPrincipal UserDetailsImp userDetails) {
+        UUID userId = userDetails.getUser().getId();
+        return ResponseEntity.ok(projectService.getProjectCount(userId));
     }
 
     @GetMapping("/{projectId}")

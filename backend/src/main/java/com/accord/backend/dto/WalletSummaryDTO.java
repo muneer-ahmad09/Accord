@@ -7,7 +7,8 @@ import java.util.List;
 
 @Data
 public class WalletSummaryDTO {
-    private BigDecimal availableBalance; // Fully settled and ready to withdraw
-    private BigDecimal pendingBalance;   // Processing via Stripe
-    private List<TransactionDTO> recentActivity; // Top 5-10 recent transactions
+    private BigDecimal availableBalance;
+    private BigDecimal pendingBalance;
+    private BigDecimal salesGrowth;
+    private List<TransactionDTO> recentActivity;
 }

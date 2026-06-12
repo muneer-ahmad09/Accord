@@ -1,9 +1,12 @@
 package com.accord.backend.repository;
 
 import com.accord.backend.entity.Project;
+import com.accord.backend.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -19,5 +22,7 @@ public interface ProjectRepo extends JpaRepository<Project, UUID> {
     // Changed from findByIdAndUserId
 
     Page<Project> findByAgencyId(UUID userId, Pageable pageable);
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.status = :status AND p.agency.id = :userId")
+    long countByStatusAndAgencyId(@Param("status") ProjectStatus status, @Param("userId") UUID userId);
 
 }

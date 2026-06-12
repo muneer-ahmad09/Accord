@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.math.RoundingMode;
+
 @Service
 @RequiredArgsConstructor
 public class WalletService {
@@ -28,29 +32,44 @@ public class WalletService {
     private final WalletLedgerRepo ledgerRepo;
     private final InvoiceRepo invoiceRepo;
 
-    // --- 1. Dashboard Read Methods ---
+
 
     public WalletSummaryDTO getWalletSummary(String userId) {
         UUID userUuid = convertToUUID(userId);
 
-        // Fetch aggregated balances directly from the DB for performance
+        // 1. Fetch overall balances
         BigDecimal available = ledgerRepo.calculateTotalBalanceByStatus(userUuid, LedgerStatus.SETTLED);
         BigDecimal pending = ledgerRepo.calculateTotalBalanceByStatus(userUuid, LedgerStatus.PROCESSING);
 
-        // Handle nulls if the wallet is completely empty
         available = available != null ? available : BigDecimal.ZERO;
         pending = pending != null ? pending : BigDecimal.ZERO;
 
-        // Fetch the 5 most recent transactions for the overview card
+        // 2. Fetch the 5 most recent transactions
         Pageable topFive = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
         List<TransactionDTO> recentActivity = ledgerRepo.findByUserId(userUuid, topFive)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+        // 3. Calculate Sales Growth
+        YearMonth currentMonth = YearMonth.now();
+        LocalDateTime startOfCurrentMonth = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime now = LocalDateTime.now();
+
+        YearMonth lastMonth = currentMonth.minusMonths(1);
+        LocalDateTime startOfLastMonth = lastMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfLastMonth = currentMonth.atDay(1).atStartOfDay().minusNanos(1);
+
+        BigDecimal currentMonthSales = ledgerRepo.sumSettledRevenueBetweenDates(userUuid, startOfCurrentMonth, now);
+        BigDecimal lastMonthSales = ledgerRepo.sumSettledRevenueBetweenDates(userUuid, startOfLastMonth, endOfLastMonth);
+
+         BigDecimal salesGrowth = calculateGrowthPercentage(currentMonthSales, lastMonthSales);
+
+        // 4. Build the Response
         WalletSummaryDTO summary = new WalletSummaryDTO();
         summary.setAvailableBalance(available);
         summary.setPendingBalance(pending);
+        summary.setSalesGrowth(salesGrowth);
         summary.setRecentActivity(recentActivity);
 
         return summary;
@@ -167,5 +186,23 @@ public class WalletService {
         dto.setStatus(ledger.getStatus());
         dto.setCreatedAt(ledger.getCreatedAt());
         return dto;
+    }
+
+    private BigDecimal calculateGrowthPercentage(BigDecimal current, BigDecimal prior) {
+
+        // Handle Division by Zero Edge Cases
+        if (prior.compareTo(BigDecimal.ZERO) == 0) {
+            if (current.compareTo(BigDecimal.ZERO) > 0) {
+                return new BigDecimal("100.00"); // Grew from 0 to something
+            }
+            return BigDecimal.ZERO; // Stayed at 0
+        }
+
+        BigDecimal difference = current.subtract(prior);
+
+        // (Difference / Prior) * 100
+        return difference.divide(prior, 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 }

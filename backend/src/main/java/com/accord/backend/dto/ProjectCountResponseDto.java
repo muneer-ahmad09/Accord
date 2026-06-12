@@ -1,4 +1,8 @@
 package com.accord.backend.dto;
 
-public class projectCountResponseDto {
+import lombok.Data;
+
+@Data
+public class ProjectCountResponseDto {
+    long totalProjects;
 }

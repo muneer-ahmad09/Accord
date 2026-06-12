@@ -1,7 +1,7 @@
 "use client";
 import { TrendingUp, Users, FolderOpen, Loader2 } from "lucide-react";
 import { useApi } from "@/lib/useApi";
-import { analyticsApi, projectsApi, DashboardSummary } from "@/lib/api";
+import { analyticsApi, MonthlyRevenue, WalletSummary ,projectCount, ClientMetricsDTO} from "@/lib/api";
 
 function SkeletonCard({ gradient = false }: { gradient?: boolean }) {
   return (
@@ -18,7 +18,13 @@ function SkeletonCard({ gradient = false }: { gradient?: boolean }) {
 }
 
 export default function StatCards() {
-  const { data: summary, loading } = useApi<DashboardSummary>(() => analyticsApi.getDashboardSummary());
+  const { data: revenue, loading } = useApi<MonthlyRevenue[]>(() => analyticsApi.getRevenueProfit());
+
+  const {data :walletSummary, loading: summaryLoading} = useApi<WalletSummary>(() => analyticsApi.getWalletSummary());
+
+  const {data:projectCount ,loading: projectCountLoading} = useApi<projectCount>(() => analyticsApi.getProjectsCount());
+
+  const {data :clientMetrics, loading: clientMetricsLoading} = useApi<ClientMetricsDTO>(() => analyticsApi.getClientMetrics());
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -34,11 +40,11 @@ export default function StatCards() {
   }
 
   // Fall back to static display values if backend not yet wired
-  const totalSales = summary?.totalSales ?? 15738;
-  const salesGrowth = summary?.salesGrowthPct ?? 12.4;
-  const newCustomersPct = summary?.newCustomersPct ?? 30.36;
-  const newCustomersGrowth = summary?.newCustomersGrowthPct ?? 4.2;
-  const activeProjects = summary?.activeProjects ?? 3222;
+  const totalSales = walletSummary?.availableBalance ?? 15738;
+  const salesGrowth = walletSummary?.salesGrowth ?? 12.4;
+  const newCustomersPct = clientMetrics?.newCustomersPct ?? 30.36;
+  const newCustomersGrowth = clientMetrics?.newCustomersGrowth ?? 4.2;
+  const activeProjects = projectCount?.count ?? 0;
 
   return (
     <div className="stats-grid-3">

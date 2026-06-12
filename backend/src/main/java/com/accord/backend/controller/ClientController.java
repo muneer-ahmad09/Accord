@@ -1,5 +1,6 @@
 package com.accord.backend.controller;
 
+import com.accord.backend.dto.ClientMetricsDTO;
 import com.accord.backend.dto.CreateUpdateClientDTO;
 import com.accord.backend.dto.GetClientsDTO;
 import com.accord.backend.service.ClientServiceIInterface;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/clients")
@@ -63,5 +66,14 @@ public class ClientController {
         String userId = userDetails.getUser().getId().toString();
         GetClientsDTO updatedClient = clientService.updateClient(clientId, userId, dto);
         return ResponseEntity.ok(updatedClient);
+    }
+
+    @GetMapping("/metrics")
+    public ResponseEntity<ClientMetricsDTO> getClientDashboardMetrics(
+            @AuthenticationPrincipal UserDetailsImp userDetails) {
+
+        UUID userId = userDetails.getUser().getId();
+        ClientMetricsDTO metrics = clientService.getClientMetrics(userId);
+        return ResponseEntity.ok(metrics);
     }
 }

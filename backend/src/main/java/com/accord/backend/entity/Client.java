@@ -1,5 +1,6 @@
 package com.accord.backend.entity;
 
+import com.accord.backend.enums.LeadSource;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -19,6 +20,10 @@ public class Client { // Singular class name
 
     @Column(name = "user_id", nullable = false)
     private UUID userId; // Changed to camelCase
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "lead_source")
+    private LeadSource leadSource;
 
     @Column(name = "company_name", nullable = false)
     private String companyName; // Changed to camelCase

@@ -1,4 +1,5 @@
 package com.accord.backend.enums;
 
-public class LeadSource {
+public enum LeadSource {
+    DIRECT, SOCIAL, REFERRAL, OUTBOUND,WEBSITE
 }

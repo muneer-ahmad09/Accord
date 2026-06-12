@@ -1,6 +1,7 @@
 package com.accord.backend.service;
 
 import com.accord.backend.dto.CreateProjectDTO;
+import com.accord.backend.dto.ProjectCountResponseDto;
 import com.accord.backend.dto.ProjectResponseDTO;
 import com.accord.backend.entity.Client;
 import com.accord.backend.entity.Project;
@@ -29,6 +30,13 @@ public class ProjectService {
     public Page<ProjectResponseDTO> getAllProjects(String userId, Pageable pageable) {
         return projectRepo.findByAgencyId(convertToUUID(userId), pageable)
                 .map(this::convertToDTO);
+    }
+
+    public ProjectCountResponseDto getProjectCount(UUID userId) {
+        long count = projectRepo.countByStatusAndAgencyId(ProjectStatus.ACTIVE,userId);
+        ProjectCountResponseDto projectCountResponseDto = new ProjectCountResponseDto();
+        projectCountResponseDto.setTotalProjects(count);
+        return projectCountResponseDto;
     }
 
     public ProjectResponseDTO getProjectById(String projectId, String userId) {

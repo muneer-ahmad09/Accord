@@ -9,7 +9,10 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -32,7 +35,7 @@ export function clearToken() {
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
 async function apiFetch<T>(
   path: string,
-  options: RequestInit & { auth?: boolean } = {}
+  options: RequestInit & { auth?: boolean } = {},
 ): Promise<T> {
   const { auth = true, ...init } = options;
   const headers: Record<string, string> = {
@@ -58,7 +61,9 @@ async function apiFetch<T>(
     try {
       const body = await res.json();
       message = body.message ?? body.error ?? message;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     throw new ApiError(res.status, message);
   }
 
@@ -87,7 +92,7 @@ export interface UserProfile {
   taxId?: string;
   stripeAccountId?: string;
   role: Role[];
-  createdAt: string; 
+  createdAt: string;
 }
 
 export interface OnboardingPayload {
@@ -102,13 +107,13 @@ export interface OnboardingPayload {
 // Wallet
 export interface WalletTransaction {
   id: string;
-  date: string;           // ISO string
-  description: string;
-  amount: number;         // positive = credit, negative = debit
+  invoiceId: string; // ISO string
+  fxRateApplied: number;
+  amountInr: number; // positive = credit, negative = debit
   currency: string;
   type: "INVOICE_PAYMENT" | "PAYOUT" | "PLATFORM_FEE" | "REFUND";
   status: "SETTLED" | "PROCESSING" | "PENDING" | "FAILED";
-  partyName?: string;
+  createdAt: string; // ISO string
 }
 
 export interface WalletSummary {
@@ -177,23 +182,25 @@ export interface Project {
 
 // Analytics
 export interface MonthlyRevenue {
-  month: string;   // e.g. "Jan"
+  month: string; // e.g. "Jan"
   revenue: number;
   profit: number;
 }
 
 export interface TrafficSource {
-  name: string;
-  value: number;   // percentage 0-100
-  color: string;
+  sourceName: string;
+  value: number;
 }
 
-export interface DashboardSummary {
-  totalSales: number;
-  salesGrowthPct: number;
-  newCustomersPct: number;
-  newCustomersGrowthPct: number;
-  activeProjects: number;
+export interface WalletSummary {
+  availableBalance: number;
+  pendingBalance: number;
+  salesGrowth: number; 
+  recentActivity: WalletTransaction[];
+}
+
+export interface projectCount {
+  count: number;
 }
 
 // Notifications
@@ -204,6 +211,13 @@ export interface AppNotification {
   description: string;
   read: boolean;
   createdAt: string;
+}
+
+export interface ClientMetricsDTO {
+  totalCustomers: number;
+  newCustomersThisMonth: number;
+  newCustomersPct: number;
+  newCustomersGrowth: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -249,11 +263,14 @@ export const authApi = {
    * and exchanges it for our own JWT here.
    */
   oauthCallback(provider: string, code: string) {
-    return apiFetch<AuthTokenResponse>(`/api/v1/auth/oauth/${provider}/callback`, {
-      method: "POST",
-      auth: false,
-      body: JSON.stringify({ code }),
-    });
+    return apiFetch<AuthTokenResponse>(
+      `/api/v1/auth/oauth/${provider}/callback`,
+      {
+        method: "POST",
+        auth: false,
+        body: JSON.stringify({ code }),
+      },
+    );
   },
 };
 
@@ -282,8 +299,25 @@ export const analyticsApi = {
    * GET /api/v1/analytics/dashboard
    * Returns the four headline KPI numbers for the top stat cards.
    */
-  getDashboardSummary() {
-    return apiFetch<DashboardSummary>("/api/v1/analytics/dashboard");
+
+  getRevenueProfit() {
+    return apiFetch<MonthlyRevenue[]>("/api/v1/analytics/revenue-profit");
+  },
+
+  getTrafficSources() {
+    return apiFetch<TrafficSource[]>("/api/v1/analytics/traffic-sources");
+  },
+
+  getWalletSummary() {
+    return apiFetch<WalletSummary>("/api/v1/wallet/summary");
+  },
+
+  getProjectsCount() {
+    return apiFetch<projectCount>("/api/v1/projects/count");
+  },
+
+  getClientMetrics() {
+    return apiFetch<ClientMetricsDTO>("/api/v1/clients/metrics");
   },
 
   /**
@@ -292,16 +326,15 @@ export const analyticsApi = {
    * Spring should run: SELECT month, SUM(amount) FROM invoices WHERE status='PAID' GROUP BY month
    */
   getRevenueByMonth(months = 12) {
-    return apiFetch<MonthlyRevenue[]>(`/api/v1/analytics/revenue?months=${months}`);
+    return apiFetch<MonthlyRevenue[]>(
+      `/api/v1/analytics/revenue?months=${months}`,
+    );
   },
 
   /**
    * GET /api/v1/analytics/traffic
    * Returns traffic source breakdown percentages (Direct / Social / Referral).
    */
-  getTrafficSources() {
-    return apiFetch<TrafficSource[]>("/api/v1/analytics/traffic");
-  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -323,7 +356,7 @@ export const walletApi = {
    */
   getTransactions(page = 0, size = 20) {
     return apiFetch<{ content: WalletTransaction[]; totalElements: number }>(
-      `/api/v1/wallet/transactions?page=${page}&size=${size}`
+      `/api/v1/wallet/transactions?page=${page}&size=${size}`,
     );
   },
 };
@@ -341,8 +374,16 @@ export const clientsApi = {
     return apiFetch<Client>(`/api/v1/clients/${id}`);
   },
   /** POST /api/v1/clients */
-  create(payload: Omit<Client, "id" | "createdAt" | "totalBilled" | "outstandingBalance">) {
-    return apiFetch<Client>("/api/v1/clients", { method: "POST", body: JSON.stringify(payload) });
+  create(
+    payload: Omit<
+      Client,
+      "id" | "createdAt" | "totalBilled" | "outstandingBalance"
+    >,
+  ) {
+    return apiFetch<Client>("/api/v1/clients", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };
 
@@ -360,7 +401,10 @@ export const invoicesApi = {
   },
   /** POST /api/v1/invoices */
   create(payload: Partial<Invoice>) {
-    return apiFetch<Invoice>("/api/v1/invoices", { method: "POST", body: JSON.stringify(payload) });
+    return apiFetch<Invoice>("/api/v1/invoices", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };
 
@@ -395,7 +439,9 @@ export const projectsApi = {
 
   /** GET /api/v1/projects/count?status=ACTIVE — preferred endpoint */
   countByStatus(status: string) {
-    return apiFetch<{ count: number }>(`/api/v1/projects/count?status=${status}`);
+    return apiFetch<{ count: number }>(
+      `/api/v1/projects/count?status=${status}`,
+    );
   },
 };
 
@@ -409,7 +455,9 @@ export const notificationsApi = {
   },
   /** PUT /api/v1/notifications/:id/read */
   markRead(id: string) {
-    return apiFetch<void>(`/api/v1/notifications/${id}/read`, { method: "PUT" });
+    return apiFetch<void>(`/api/v1/notifications/${id}/read`, {
+      method: "PUT",
+    });
   },
   /** PUT /api/v1/notifications/read-all */
   markAllRead() {
