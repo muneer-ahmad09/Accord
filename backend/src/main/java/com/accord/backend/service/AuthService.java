@@ -4,14 +4,12 @@ import com.accord.backend.dto.*;
 import com.accord.backend.entity.User;
 import com.accord.backend.exceptions.ResourceNotFoundException;
 import com.accord.backend.repository.UserRepo;
+import com.accord.backend.utils.UserDetailsImp;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +57,7 @@ public class AuthService {
     }
 
 
-    public String authenticateUser(LoginDTO dto) {
+    public LogInResponseDto authenticateUser(LoginDTO dto) {
 
         Authentication authentication =
                 authenticationManager.authenticate(
@@ -68,10 +66,25 @@ public class AuthService {
                                 dto.getPassword()
                         ));
 
-        UserDetails user =
-                (UserDetails) authentication.getPrincipal();
+        UserDetailsImp userDetails =
+                (UserDetailsImp) authentication.getPrincipal();
 
-        return jwtService.generateToken(user);
+        User user = userDetails.getUser();
+
+        UserLoginDto userDto = new UserLoginDto();
+        userDto.setId(user.getId().toString());
+        userDto.setEmail(user.getEmail());
+        userDto.setAgencyName(user.getAgencyName());
+        userDto.setTaxId(user.getTaxId());
+        userDto.setStripeAccountId(user.getStripeAccountId());
+        userDto.setEmailVerified(user.isEmailVerified());
+        userDto.setCreatedAt(user.getCreatedAt());
+        userDto.setRoles(user.getRole());
+        LogInResponseDto response = new LogInResponseDto();
+        response.setToken(jwtService.generateToken(userDetails));
+        response.setUser(userDto);
+
+        return response;
     }
 
     @Transactional

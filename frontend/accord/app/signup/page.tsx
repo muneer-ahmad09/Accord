@@ -1,21 +1,27 @@
 "use client";
 import { useState } from "react";
 import { Eye, EyeOff, Gauge, ArrowRight, Check } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/lib/api";
 
 const GithubIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
   </svg>
 );
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export default function SignUp() {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState("");
 
   const passwordStrength = (p: string) => {
     let s = 0;
@@ -31,7 +37,7 @@ export default function SignUp() {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
+    if (!form.name.trim()) e.name = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email";
     if (form.password.length < 8) e.password = "Password must be at least 8 characters";
@@ -44,40 +50,35 @@ export default function SignUp() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    router.push("/onboarding?provider=email&new=true");
+    setApiError("");
+    try {
+      // POST /api/v1/auth/register → JWT stored in AuthContext
+      await signUp(form.name.trim(), form.email.trim(), form.password);
+      // New account always goes to onboarding
+      router.push("/onboarding?provider=email&new=true");
+    } catch (err) {
+      setApiError(err instanceof ApiError ? err.message : "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleOAuth(provider: string) {
-    router.push(`/onboarding?provider=${provider}&new=true`);
+    window.location.href = `${BASE_URL}/oauth2/authorization/${provider}`;
   }
 
-  const field = (key: keyof typeof form, label: string, type = "text", placeholder = "") => (
-    <div>
-      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>{label}</label>
-      <input
-        type={type}
-        className="form-input"
-        placeholder={placeholder}
-        value={form[key]}
-        onChange={e => { setForm(f => ({ ...f, [key]: e.target.value })); setErrors(x => ({ ...x, [key]: "" })); }}
-      />
-      {errors[key] && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 4 }}>{errors[key]}</p>}
-    </div>
-  );
+  const setField = (k: keyof typeof form, v: string) => {
+    setForm(f => ({ ...f, [k]: v }));
+    setErrors(x => ({ ...x, [k]: "" }));
+    setApiError("");
+  };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 36, justifyContent: "center" }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: "linear-gradient(135deg, #4f7eff 0%, #38d9a9 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 24px rgba(79,126,255,0.35)",
-          }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg, #4f7eff 0%, #38d9a9 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(79,126,255,0.35)" }}>
             <Gauge size={20} color="#fff" />
           </div>
           <div>
@@ -123,20 +124,26 @@ export default function SignUp() {
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {field("name", "Full Name", "text", "Jane Smith")}
-            {field("email", "Email", "email", "you@company.com")}
+            {/* Name */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>Full Name</label>
+              <input type="text" className="form-input" placeholder="Jane Smith" value={form.name} onChange={e => setField("name", e.target.value)} />
+              {errors.name && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 4 }}>{errors.name}</p>}
+            </div>
 
+            {/* Email */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>Email</label>
+              <input type="email" className="form-input" placeholder="you@company.com" value={form.email} onChange={e => setField("email", e.target.value)} />
+              {errors.email && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 4 }}>{errors.email}</p>}
+            </div>
+
+            {/* Password */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>Password</label>
               <div style={{ position: "relative" }}>
-                <input
-                  type={showPass ? "text" : "password"}
-                  className="form-input"
-                  placeholder="Min. 8 characters"
-                  value={form.password}
-                  onChange={e => { setForm(f => ({ ...f, password: e.target.value })); setErrors(x => ({ ...x, password: "" })); }}
-                  style={{ paddingRight: 44 }}
-                />
+                <input type={showPass ? "text" : "password"} className="form-input" placeholder="Min. 8 characters"
+                  value={form.password} onChange={e => setField("password", e.target.value)} style={{ paddingRight: 44 }} />
                 <button type="button" onClick={() => setShowPass(o => !o)}
                   style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -145,7 +152,7 @@ export default function SignUp() {
               {form.password.length > 0 && (
                 <div style={{ marginTop: 8, display: "flex", gap: 4, alignItems: "center" }}>
                   {[1,2,3,4].map(i => (
-                    <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= strength ? strengthColor : "var(--border)" }} />
+                    <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= strength ? strengthColor : "var(--border)", transition: "background 0.2s" }} />
                   ))}
                   <span style={{ fontSize: 11, color: strengthColor, marginLeft: 6, fontWeight: 600, minWidth: 36 }}>{strengthLabel}</span>
                 </div>
@@ -153,29 +160,33 @@ export default function SignUp() {
               {errors.password && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 4 }}>{errors.password}</p>}
             </div>
 
+            {/* Confirm */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)", display: "block", marginBottom: 6 }}>Confirm Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
-                value={form.confirm}
-                onChange={e => { setForm(f => ({ ...f, confirm: e.target.value })); setErrors(x => ({ ...x, confirm: "" })); }}
-              />
+              <input type="password" className="form-input" placeholder="••••••••"
+                value={form.confirm} onChange={e => setField("confirm", e.target.value)} />
               {form.confirm && form.password === form.confirm && (
                 <p style={{ fontSize: 11, color: "var(--green)", marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}><Check size={11} /> Passwords match</p>
               )}
               {errors.confirm && <p style={{ fontSize: 11, color: "var(--red)", marginTop: 4 }}>{errors.confirm}</p>}
             </div>
 
+            {apiError && (
+              <div style={{ fontSize: 12, color: "var(--red)", background: "rgba(239,68,68,0.08)", padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)" }}>
+                ⚠ {apiError}
+              </div>
+            )}
+
             <button type="submit" disabled={loading} style={{
               width: "100%", padding: "13px", borderRadius: 10, border: "none",
-              background: loading ? "var(--border)" : "var(--accent)", color: "#fff",
+              background: loading ? "var(--border)" : "var(--accent)", color: loading ? "var(--text-3)" : "#fff",
               fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
               fontFamily: "Syne, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               transition: "background 0.15s", marginTop: 4,
             }}>
-              {loading ? "Creating account…" : <>Create Account <ArrowRight size={15} /></>}
+              {loading
+                ? <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> Creating account…</>
+                : <>Create Account <ArrowRight size={15} /></>}
             </button>
           </form>
 
