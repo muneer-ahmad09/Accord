@@ -50,4 +50,19 @@ public interface WalletLedgerRepo extends JpaRepository<WalletLedger, UUID> {
             @Param("userId") UUID userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = "SELECT EXTRACT(YEAR FROM created_at) as year_val, " +
+            "EXTRACT(MONTH FROM created_at) as month_val, " +
+            "SUM(CASE WHEN type = 'INVOICE_PAID' THEN amount_inr ELSE 0 END) as revenue, " +
+            "SUM(CASE WHEN type = 'PLATFORM_FEE' THEN amount_inr ELSE 0 END) as fees " +
+            "FROM wallet_ledger " +
+            "WHERE user_id = :userId " +
+            "AND created_at >= :startDate " +
+            "AND status = 'SETTLED' " +
+            "GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at) " +
+            "ORDER BY year_val ASC, month_val ASC",
+            nativeQuery = true)
+    List<Object[]> getRollingRevenueAndFees(
+            @Param("userId") UUID userId,
+            @Param("startDate") LocalDateTime startDate);
 }

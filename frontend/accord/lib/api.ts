@@ -111,6 +111,8 @@ export interface WalletTransaction {
   fxRateApplied: number;
   amountInr: number; // positive = credit, negative = debit
   currency: string;
+  companyName: string;
+  description: string;
   type: "INVOICE_PAYMENT" | "PAYOUT" | "PLATFORM_FEE" | "REFUND";
   status: "SETTLED" | "PROCESSING" | "PENDING" | "FAILED";
   createdAt: string; // ISO string

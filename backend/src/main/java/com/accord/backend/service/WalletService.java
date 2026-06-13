@@ -175,16 +175,34 @@ public class WalletService {
     private TransactionDTO convertToDTO(WalletLedger ledger) {
         TransactionDTO dto = new TransactionDTO();
         dto.setId(ledger.getId());
-
-        if (ledger.getInvoice() != null) {
-            dto.setInvoiceId(ledger.getInvoice().getId());
-        }
-
         dto.setType(ledger.getType());
         dto.setAmountInr(ledger.getAmountInr());
         dto.setFxRateApplied(ledger.getFxRateApplied());
         dto.setStatus(ledger.getStatus());
         dto.setCreatedAt(ledger.getCreatedAt());
+
+        // Assuming your WalletLedger entity has a @ManyToOne relationship to Invoice
+        if (ledger.getInvoice() != null) {
+            dto.setInvoiceId(ledger.getInvoice().getId());
+
+            // Navigate the relational chain: Ledger -> Invoice -> Client -> Company Name
+            String clientName = ledger.getInvoice().getClient().getCompanyName();
+            dto.setCompanyName(clientName);
+
+            // Create a nice UI string (e.g., "Payment for INV-001")
+            dto.setDescription("Payment for " + ledger.getInvoice().getInvoiceNumber());
+
+        } else {
+            // Handle ledgers without invoices (like Platform Fees or Withdrawals)
+            dto.setCompanyName("Accord Platform");
+
+            if ("PLATFORM_FEE".equals(ledger.getType())) {
+                dto.setDescription("Platform Processing Fee");
+            } else if ("WITHDRAWAL".equals(ledger.getType())) {
+                dto.setDescription("Bank Withdrawal");
+            }
+        }
+
         return dto;
     }
 

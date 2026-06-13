@@ -38,4 +38,14 @@ public class AnalyticsController {
         UUID userId = userDetailsd.getUser().getId();
         return ResponseEntity.ok(analyticsService.getTrafficSources(userId));
     }
+
+    @GetMapping("/revenue")
+    public ResponseEntity<List<MonthlyChartDataDTO>> getRollingRevenueChart(
+            @AuthenticationPrincipal UserDetailsImp userDetails,
+            @RequestParam(defaultValue = "12") int months) {
+
+        UUID userId = userDetails.getUser().getId();
+        List<MonthlyChartDataDTO> chartData = analyticsService.getRollingRevenue(userId, months);
+        return ResponseEntity.ok(chartData);
+    }
 }

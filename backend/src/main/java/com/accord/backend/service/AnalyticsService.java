@@ -9,8 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -22,6 +28,56 @@ public class AnalyticsService {
 
     @Autowired
     private WalletLedgerRepo walletLedgerRepo;
+
+    public List<MonthlyChartDataDTO> getRollingRevenue(UUID userId, int monthsToFetch) {
+
+        List<MonthlyChartDataDTO> chartData = new ArrayList<>();
+
+        YearMonth currentMonth = YearMonth.now();
+
+        // 1. Pre-fill the array backward to ensure perfect chronological ordering
+        // E.g., if monthsToFetch=12, loop from 11 months ago up to this month
+        for (int i = monthsToFetch - 1; i >= 0; i--) {
+            YearMonth targetMonth = currentMonth.minusMonths(i);
+
+            // Gets a clean short name like "Jan", "Feb"
+            String monthLabel = targetMonth.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+
+            chartData.add(new MonthlyChartDataDTO(monthLabel, BigDecimal.ZERO, BigDecimal.ZERO));
+        }
+
+        // 2. Calculate the exact database start date (1st day of the oldest month at 00:00)
+        LocalDateTime startDate = currentMonth.minusMonths(monthsToFetch - 1).atDay(1).atStartOfDay();
+
+        // 3. Fetch from PostgreSQL
+        List<Object[]> dbResults = walletLedgerRepo.getRollingRevenueAndFees(userId, startDate);
+
+        // 4. Map the DB results into the exact right slot in our pre-filled array
+        for (Object[] row : dbResults) {
+            int rowYear = ((Number) row[0]).intValue();
+            int rowMonth = ((Number) row[1]).intValue();
+            YearMonth rowYearMonth = YearMonth.of(rowYear, rowMonth);
+
+            // Calculate which array index this month belongs to
+            int index = (int) ChronoUnit.MONTHS.between(
+                    currentMonth.minusMonths(monthsToFetch - 1),
+                    rowYearMonth
+            );
+
+            // Safety check to ensure we only populate the requested timeline
+            if (index >= 0 && index < monthsToFetch) {
+                BigDecimal revenue = (row[2] != null) ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO;
+                BigDecimal fees = (row[3] != null) ? new BigDecimal(row[3].toString()) : BigDecimal.ZERO;
+                BigDecimal profit = revenue.subtract(fees);
+
+                MonthlyChartDataDTO monthData = chartData.get(index);
+                monthData.setRevenue(revenue.setScale(2, RoundingMode.HALF_UP));
+                monthData.setProfit(profit.setScale(2, RoundingMode.HALF_UP));
+            }
+        }
+
+        return chartData;
+    }
 
     // Feeds the Line Chart
     public List<MonthlyChartDataDTO> getYearlyRevenueVsProfit(UUID userId, int year) {

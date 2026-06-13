@@ -15,5 +15,7 @@ public class TransactionDTO {
     private BigDecimal amountInr;
     private BigDecimal fxRateApplied;
     private LedgerStatus status;
+    private String companyName;
+    private String description;
     private LocalDateTime createdAt;
 }

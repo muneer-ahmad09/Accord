@@ -1,7 +1,7 @@
 "use client";
 import { TrendingUp, Users, FolderOpen, Loader2 } from "lucide-react";
 import { useApi } from "@/lib/useApi";
-import { analyticsApi, MonthlyRevenue, WalletSummary ,projectCount, ClientMetricsDTO} from "@/lib/api";
+import { analyticsApi, WalletSummary ,projectCount, ClientMetricsDTO} from "@/lib/api";
 
 function SkeletonCard({ gradient = false }: { gradient?: boolean }) {
   return (
@@ -17,10 +17,13 @@ function SkeletonCard({ gradient = false }: { gradient?: boolean }) {
   );
 }
 
-export default function StatCards() {
-  const { data: revenue, loading } = useApi<MonthlyRevenue[]>(() => analyticsApi.getRevenueProfit());
+interface StatCardsProps {
+  walletSummmary?: WalletSummary;
+}
 
-  const {data :walletSummary, loading: summaryLoading} = useApi<WalletSummary>(() => analyticsApi.getWalletSummary());
+export default function StatCards(
+  { walletSummmary }: StatCardsProps
+) {
 
   const {data:projectCount ,loading: projectCountLoading} = useApi<projectCount>(() => analyticsApi.getProjectsCount());
 
@@ -29,7 +32,7 @@ export default function StatCards() {
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
-  if (loading) {
+  if (!walletSummmary || projectCountLoading || clientMetricsLoading) {
     return (
       <div className="stats-grid-3">
         <SkeletonCard gradient />
@@ -40,8 +43,8 @@ export default function StatCards() {
   }
 
   // Fall back to static display values if backend not yet wired
-  const totalSales = walletSummary?.availableBalance ?? 15738;
-  const salesGrowth = walletSummary?.salesGrowth ?? 12.4;
+  const totalSales = walletSummmary?.availableBalance ?? 15738;
+  const salesGrowth = walletSummmary?.salesGrowth ?? 12.4;
   const newCustomersPct = clientMetrics?.newCustomersPct ?? 30.36;
   const newCustomersGrowth = clientMetrics?.newCustomersGrowth ?? 4.2;
   const activeProjects = projectCount?.count ?? 0;

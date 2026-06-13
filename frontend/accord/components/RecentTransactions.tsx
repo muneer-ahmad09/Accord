@@ -1,6 +1,5 @@
 "use client";
-import { useApi } from "@/lib/useApi";
-import { walletApi, WalletSummary } from "@/lib/api";
+import { WalletSummary } from "@/lib/api";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 function Skeleton() {
@@ -23,12 +22,15 @@ function Skeleton() {
   );
 }
 
-export default function RecentTransactions() {
-  const { data, loading, error } = useApi<WalletSummary>(() => walletApi.getSummary());
+interface RecentTransactionsProps {
+  walletSummary?: WalletSummary;
+}
 
-  if (loading) return <Skeleton />;
+export default function RecentTransactions( {walletSummary} : RecentTransactionsProps) {
 
-  const transactions = data?.recentActivity ?? [
+  if (walletSummary === undefined) return <Skeleton />;
+
+  const transactions = walletSummary?.recentActivity ?? [
     // Static fallback while backend is being wired
     { id: "1", date: "", description: "Invoice Payment (ABC Corp)", amount: 100,    currency: "USD", type: "INVOICE_PAYMENT" as const, status: "SETTLED" as const, partyName: "ABC Corp" },
     { id: "2", date: "", description: "Invoice Payment (XYZ Ltd)",  amount: 520,    currency: "USD", type: "INVOICE_PAYMENT" as const, status: "SETTLED" as const, partyName: "XYZ Ltd" },
@@ -46,11 +48,10 @@ export default function RecentTransactions() {
         <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.06em" }}>TRANSACTION</span>
         <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-3)", letterSpacing: "0.06em" }}>AMOUNT</span>
       </div>
-      {error && <p style={{ fontSize: 12, color: "var(--text-3)", padding: "12px 0" }}>Could not load transactions</p>}
       {transactions.slice(0, 5).map((t, i) => {
-        const positive = t.amount > 0;
+        const positive = t.amountInr > 0;
         const Icon = positive ? TrendingUp : t.type === "PLATFORM_FEE" ? Minus : TrendingDown;
-        const absAmount = Math.abs(t.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const absAmount = Math.abs(t.amountInr).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const currency = t.currency === "INR" ? "₹" : "$";
         return (
           <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: i < transactions.length - 1 ? "1px solid var(--border-dim)" : "none" }}>
@@ -60,7 +61,7 @@ export default function RecentTransactions() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {t.partyName ?? t.description}
+                  {t.companyName ?? t.description}
                 </p>
                 <p style={{ fontSize: 11, color: "var(--text-3)" }}>{t.status.charAt(0) + t.status.slice(1).toLowerCase()}</p>
               </div>
