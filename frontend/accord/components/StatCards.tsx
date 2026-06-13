@@ -47,7 +47,7 @@ export default function StatCards(
   const salesGrowth = walletSummmary?.salesGrowth ?? 12.4;
   const newCustomersPct = clientMetrics?.newCustomersPct ?? 30.36;
   const newCustomersGrowth = clientMetrics?.newCustomersGrowth ?? 4.2;
-  const activeProjects = projectCount?.count ?? 0;
+  const activeProjects = projectCount?.totalProjects ?? 0;
 
   return (
     <div className="stats-grid-3">

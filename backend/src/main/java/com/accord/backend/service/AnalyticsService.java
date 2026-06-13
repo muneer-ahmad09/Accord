@@ -118,14 +118,19 @@ public class AnalyticsService {
 
         List<Object[]> rawData = clientRepo.countClientsByLeadSource(userId);
 
+        int total = rawData.stream()
+                .mapToInt(row -> ((Long) row[1]).intValue())
+                .sum();
+
         List<TrafficSourceDTO> sources = new ArrayList<>();
 
         for (Object[] row : rawData) {
             String sourceName = String.valueOf(row[0]);
-
             int count = ((Long) row[1]).intValue();
 
-            sources.add(new TrafficSourceDTO(sourceName, count));
+            int percentage = total == 0 ? 0 : (count * 100) / total;
+
+            sources.add(new TrafficSourceDTO(sourceName, percentage));
         }
 
         return sources;

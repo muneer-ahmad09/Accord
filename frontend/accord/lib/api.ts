@@ -202,7 +202,7 @@ export interface WalletSummary {
 }
 
 export interface projectCount {
-  count: number;
+  totalProjects: number;
 }
 
 // Notifications
